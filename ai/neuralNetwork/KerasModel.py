@@ -15,9 +15,7 @@ import ntpath
 import random
 import time
 
-
-start_time = time.clock()
-#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 datadir = "../data/csv"
 imagedir = "../data/images/"
 columns = ["center", "left", "right", "steering", "throttle", "reverse", "speed"]
@@ -26,7 +24,7 @@ pd.set_option("display.max_colwidth", -1)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 num_bins = 25
-samples_per_bin = 400
+samples_per_bin = 1200
 
 
 def path_leaf(path):
@@ -46,14 +44,17 @@ def cut_image_path():
 
 
 def show_initial_steering_data():
-    hist, bins = np.histogram(data["steering"], num_bins)
-    center = (bins[:-1] + bins[1:]) * 0.5
-    plt.bar(center, hist, width=0.05)
+    i_hist, i_bins = np.histogram(data["steering"], num_bins)
+    center = (i_bins[:-1] + i_bins[1:]) * 0.5
+    plt.bar(center, i_hist, width=0.05)
     plt.title("Steering data")
     plt.xlabel("Steering angle")
     plt.ylabel("Number of data")
     plt.plot((np.min(data["steering"]), np.max(data["steering"])), (samples_per_bin, samples_per_bin))
     plt.show()
+
+
+show_initial_steering_data()
 
 
 hist, bins = np.histogram(data["steering"], num_bins)
@@ -71,19 +72,20 @@ data.drop(data.index[remove_list], inplace=True)
 
 
 def show_modified_steering_data():
-    hist, _ = np.histogram(data['steering'], num_bins)
+    m_hist, _ = np.histogram(data['steering'], num_bins)
     center = (bins[:-1] + bins[1:]) * 0.5
-    plt.bar(center, hist, width=0.05)
+    plt.bar(center, m_hist, width=0.05)
     plt.plot((np.min(data['steering']), np.max(data['steering'])), (samples_per_bin, samples_per_bin))
     plt.show()
 
 
-# show_all_data()
-# show_steering_data()
+show_all_data()
+show_modified_steering_data()
+
 
 def load_data():
     # TODO: use all three angle
-    image_path = data["center"].values
+    image_path = data[["center", "left", "right"]].values
     steering = data["steering"].values
 
     # Check data linearity
@@ -148,30 +150,29 @@ def image_preprocess(image):
 
 
 def batch_generator(image_paths, steering_angles, batch_size, is_training):
-
     while True:
         batch_image = []
         batch_steering = []
         for _ in range(batch_size):
             index = random.randint(0, len(image_paths) - 1)
 
-            # center, left, right = image_paths[index]
-            image = image_paths[index]
+            center, left, right = image_paths[index]
+
             steering_angle = steering_angles[index]
             if is_training:
 
                 # TODO: try to use different angle images
 
-                # random_image = np.random.choice(3)
-                # if random_image == 0:
-                #     image, steering_angle = augment_image(center, steering_angle)
-                # elif random_image == 1:
-                #     image, steering_angle = augment_image(left, steering_angle + 0.15)
-                # elif random_image == 2:
-                #     image, steering_angle = augment_image(right, steering_angle - 0.15)
-                image, steering_angle = augment_image(image, steering_angle)
+                random_image = np.random.choice(3)
+                if random_image == 0:
+                    image, steering_angle = augment_image(center, steering_angle)
+                elif random_image == 1:
+                    image, steering_angle = augment_image(left, steering_angle + 0.2)
+                else:
+                    image, steering_angle = augment_image(right, steering_angle - 0.2)
+                # image, steering_angle = augment_image(image, steering_angle)
             else:
-                image = mpimg.imread(image)
+                image = mpimg.imread(center)
                 steering_angle = steering_angle
 
             image = image_preprocess(image)
@@ -205,7 +206,6 @@ def nvidia_model():
     model.add(Conv2D(filters=48, kernel_size=(5, 5), strides=(2, 2), activation="elu"))
     model.add(Conv2D(filters=64, kernel_size=(3, 3), activation="elu"))
     model.add(Conv2D(filters=64, kernel_size=(3, 3), activation="elu"))
-
     model.add(Flatten())
 
     model.add(Dense(units=100, activation="elu"))
@@ -213,7 +213,7 @@ def nvidia_model():
     model.add(Dense(units=10, activation="elu"))
     model.add(Dense(units=1))
 
-    optimizer = Adam(lr=1e-3)
+    optimizer = Adam(lr=1e-4)
     model.compile(loss="mse", optimizer=optimizer)
 
     return model
@@ -222,12 +222,13 @@ def nvidia_model():
 nvidia_model = nvidia_model()
 print(nvidia_model.summary())
 
+start_time = time.clock()
 cut_image_path()
 X_train, X_valid, y_train, y_valid = load_data()
-history = nvidia_model.fit_generator(batch_generator(X_train, y_train, 100, True),
-                                     steps_per_epoch=300,
-                                     epochs=10,
-                                     validation_data=batch_generator(X_valid, y_valid, 100, False),
+history = nvidia_model.fit_generator(batch_generator(X_train, y_train, 32, True),
+                                     steps_per_epoch=len(X_train),
+                                     epochs=3,
+                                     validation_data=batch_generator(X_valid, y_valid, 32, False),
                                      validation_steps=200,
                                      verbose=1,
                                      shuffle=1)
