@@ -13,9 +13,11 @@ import cv2
 import pandas as pd
 import ntpath
 import random
+import time
 
 
-# os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+start_time = time.clock()
+#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 datadir = "../data/csv"
 columns = ["center", "left", "right", "steering", "throttle", "reverse", "speed"]
 data = pd.read_csv(os.path.join(datadir, "driving_log.csv"), names=columns)
@@ -142,9 +144,10 @@ def image_preprocess(image):
 
 
 def batch_generator(image_paths, steering_angles, batch_size, is_training):
-    batch_image = []
-    batch_steering = []
+
     while True:
+        batch_image = []
+        batch_steering = []
         for _ in range(batch_size):
             index = random.randint(0, len(image_paths) - 1)
 
@@ -174,8 +177,6 @@ def batch_generator(image_paths, steering_angles, batch_size, is_training):
 
 
 X_train, X_valid, y_train, y_valid = load_data()
-x_train_gen, y_train_gen = next(batch_generator(X_train, y_train, 1, True))
-x_vald_gen, y_valid_gen = next(batch_generator(X_valid, y_valid, 1, False))
 
 
 def nvidia_model():
@@ -228,7 +229,7 @@ history = nvidia_model.fit_generator(batch_generator(X_train, y_train, 100, True
                                      validation_steps=200,
                                      verbose=1,
                                      shuffle=1)
-
+print("--- trained in %s seconds ---" % (time.clock() - start_time))
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
 plt.legend(['training', 'validation'])
