@@ -19,6 +19,7 @@ import time
 start_time = time.clock()
 #os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 datadir = "../data/csv"
+imagedir = "../data/images/"
 columns = ["center", "left", "right", "steering", "throttle", "reverse", "speed"]
 data = pd.read_csv(os.path.join(datadir, "driving_log.csv"), names=columns)
 pd.set_option("display.max_colwidth", -1)
@@ -39,9 +40,9 @@ def show_all_data():
 
 
 def cut_image_path():
-    data["center"] = data["center"].apply(path_leaf)
-    data["left"] = data["left"].apply(path_leaf)
-    data["right"] = data["right"].apply(path_leaf)
+    data["center"] = imagedir + data["center"].apply(path_leaf)
+    data["left"] = imagedir + data["left"].apply(path_leaf)
+    data["right"] = imagedir + data["right"].apply(path_leaf)
 
 
 def show_initial_steering_data():
@@ -179,9 +180,6 @@ def batch_generator(image_paths, steering_angles, batch_size, is_training):
         yield (np.asarray(batch_image), np.asarray(batch_steering))
 
 
-X_train, X_valid, y_train, y_valid = load_data()
-
-
 def nvidia_model():
     """
         NVIDIA model used
@@ -224,7 +222,8 @@ def nvidia_model():
 nvidia_model = nvidia_model()
 print(nvidia_model.summary())
 
-
+cut_image_path()
+X_train, X_valid, y_train, y_valid = load_data()
 history = nvidia_model.fit_generator(batch_generator(X_train, y_train, 100, True),
                                      steps_per_epoch=300,
                                      epochs=10,
