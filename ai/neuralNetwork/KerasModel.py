@@ -34,11 +34,14 @@ def path_leaf(path):
 
 
 def show_all_data():
+    print(data.describe())
+    print(data.head())
+
+
+def cut_image_path():
     data["center"] = data["center"].apply(path_leaf)
     data["left"] = data["left"].apply(path_leaf)
     data["right"] = data["right"].apply(path_leaf)
-    print(data.describe())
-    print(data.head())
 
 
 def show_initial_steering_data():
