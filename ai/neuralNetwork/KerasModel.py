@@ -86,7 +86,7 @@ show_modified_steering_data()
 def load_data():
     # TODO: use all three angle
     image_path = data[["center", "left", "right"]].values
-    steering = data["steering"].values
+    steerings = data["steering"].values
 
     # Check data linearity
     # fig, axes = plt.subplots(1, 2, figsize=(12, 4))
@@ -100,7 +100,7 @@ def load_data():
     # plt.show()
     # plt.show()
 
-    return train_test_split(image_path, steering, test_size=0.2, random_state=0)
+    return train_test_split(image_path, steerings, test_size=0.2, random_state=1)
 
 
 def zoom_image(image):
@@ -239,4 +239,4 @@ plt.legend(['training', 'validation'])
 plt.title('Loss')
 plt.xlabel('Epoch')
 plt.show()
-nvidia_model.save('model1.h5')
+nvidia_model.save('model.h5')
