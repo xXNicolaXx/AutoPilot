@@ -24,7 +24,7 @@ pd.set_option("display.max_colwidth", -1)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 num_bins = 25
-samples_per_bin = 1200
+samples_per_bin = 1500
 
 
 def path_leaf(path):
@@ -227,7 +227,7 @@ cut_image_path()
 X_train, X_valid, y_train, y_valid = load_data()
 history = nvidia_model.fit_generator(batch_generator(X_train, y_train, 32, True),
                                      steps_per_epoch=len(X_train),
-                                     epochs=3,
+                                     epochs=5,
                                      validation_data=batch_generator(X_valid, y_valid, 32, False),
                                      validation_steps=200,
                                      verbose=1,
@@ -239,4 +239,4 @@ plt.legend(['training', 'validation'])
 plt.title('Loss')
 plt.xlabel('Epoch')
 plt.show()
-nvidia_model.save('model.h5')
+nvidia_model.save('model1.h5')
