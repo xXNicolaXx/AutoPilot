@@ -24,7 +24,7 @@ pd.set_option("display.max_colwidth", -1)
 pd.set_option("display.max_columns", None)
 pd.set_option("display.width", None)
 num_bins = 25
-samples_per_bin = 1500
+samples_per_bin = 2000
 
 
 def path_leaf(path):
@@ -54,8 +54,8 @@ def show_initial_steering_data():
     plt.show()
 
 
+show_all_data()
 show_initial_steering_data()
-
 
 hist, bins = np.histogram(data["steering"], num_bins)
 remove_list = []
@@ -79,13 +79,12 @@ def show_modified_steering_data():
     plt.show()
 
 
-show_all_data()
 show_modified_steering_data()
 
 
 def load_data():
     # TODO: use all three angle
-    image_path = data[["center", "left", "right"]].values
+    image_paths = data[["center", "left", "right"]].values
     steerings = data["steering"].values
 
     # Check data linearity
@@ -100,7 +99,7 @@ def load_data():
     # plt.show()
     # plt.show()
 
-    return train_test_split(image_path, steerings, test_size=0.2, random_state=1)
+    return train_test_split(image_paths, steerings, test_size=0.2, random_state=5)
 
 
 def zoom_image(image):
@@ -114,7 +113,7 @@ def pan_image(image):
 
 
 def image_brightness(image):
-    brightness = augmenters.Multiply((0.2, 1.2))
+    brightness = augmenters.Multiply((0.1, 2))
     return brightness.augment_image(image)
 
 
@@ -160,8 +159,6 @@ def batch_generator(image_paths, steering_angles, batch_size, is_training):
 
             steering_angle = steering_angles[index]
             if is_training:
-
-                # TODO: try to use different angle images
 
                 random_image = np.random.choice(3)
                 if random_image == 0:
@@ -227,11 +224,12 @@ cut_image_path()
 X_train, X_valid, y_train, y_valid = load_data()
 history = nvidia_model.fit_generator(batch_generator(X_train, y_train, 32, True),
                                      steps_per_epoch=len(X_train),
-                                     epochs=5,
+                                     epochs=10,
                                      validation_data=batch_generator(X_valid, y_valid, 32, False),
                                      validation_steps=200,
                                      verbose=1,
-                                     shuffle=1)
+                                     shuffle=True)
+
 print("--- trained in %s seconds ---" % (time.clock() - start_time))
 plt.plot(history.history['loss'])
 plt.plot(history.history['val_loss'])
@@ -239,4 +237,4 @@ plt.legend(['training', 'validation'])
 plt.title('Loss')
 plt.xlabel('Epoch')
 plt.show()
-nvidia_model.save('model.h5')
+nvidia_model.save('nvidiaModel.h5')
